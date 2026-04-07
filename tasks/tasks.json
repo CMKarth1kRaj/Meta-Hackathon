@@ -1,0 +1,80 @@
+[
+  {
+    "id": "q1",
+    "question": "How many delivered orders are in the South region?",
+    "answer": "8",
+    "task_type": "filter_then_count"
+  },
+  {
+    "id": "q2",
+    "question": "Which category has the highest total quantity sold?",
+    "answer": "Groceries",
+    "task_type": "groupby_then_max"
+  },
+  {
+    "id": "q3",
+    "question": "What is the average unit price for Clothing?",
+    "answer": "1070.0",
+    "task_type": "filter_then_aggregate"
+  },
+  {
+    "id": "q4",
+    "question": "Which region has the most cancelled orders?",
+    "answer": "West",
+    "task_type": "filter_then_groupby"
+  },
+  {
+    "id": "q5",
+    "question": "How many orders have discount greater than 0.10?",
+    "answer": "7",
+    "task_type": "filter_then_count"
+  },
+  {
+    "id": "q6",
+    "question": "Which customer placed the highest unit_price order?",
+    "answer": "C013",
+    "task_type": "sort_then_lookup"
+  },
+  {
+    "id": "q7",
+    "question": "What is the minimum unit price in Groceries?",
+    "answer": "180",
+    "task_type": "filter_then_aggregate"
+  },
+  {
+    "id": "q8",
+    "question": "How many total orders are delivered?",
+    "answer": "23",
+    "task_type": "filter_then_count"
+  },
+  {
+    "id": "q9",
+    "question": "Which category appears most often?",
+    "answer": "Electronics",
+    "task_type": "groupby_then_max"
+  },
+  {
+    "id": "q10",
+    "question": "What is the maximum discount value?",
+    "answer": "0.25",
+    "task_type": "aggregate"
+  },
+  {
+    "id": "q11",
+    "question": "How many orders are in the East region?",
+    "answer": "7",
+    "task_type": "filter_then_count"
+  },
+  {
+    "id": "q12",
+    "question": "What is the total quantity of all Electronics orders?",
+    "answer": "22",
+    "task_type": "filter_then_aggregate"
+  },
+  {
+    "id": "q13",
+    "question": "How many unique customers are in the dataset?",
+    "answer": "20",
+    "task_type": "unique_count"
+  }
+]
