@@ -1,80 +1,106 @@
 [
   {
     "id": "q1",
+    "difficulty": "easy",
     "question": "How many delivered orders are in the South region?",
     "answer": "8",
-    "task_type": "filter_then_count"
+    "task_type": "filter_then_count",
+    "grader_type": "exact_match"
   },
   {
     "id": "q2",
+    "difficulty": "medium",
     "question": "Which category has the highest total quantity sold?",
     "answer": "Groceries",
-    "task_type": "groupby_then_max"
+    "task_type": "groupby_then_max",
+    "grader_type": "exact_match"
   },
   {
     "id": "q3",
+    "difficulty": "medium",
     "question": "What is the average unit price for Clothing?",
     "answer": "1070.0",
-    "task_type": "filter_then_aggregate"
+    "task_type": "filter_then_aggregate",
+    "grader_type": "numeric_tolerance"
   },
   {
     "id": "q4",
+    "difficulty": "easy",
     "question": "Which region has the most cancelled orders?",
     "answer": "West",
-    "task_type": "filter_then_groupby"
+    "task_type": "filter_then_groupby",
+    "grader_type": "exact_match"
   },
   {
     "id": "q5",
+    "difficulty": "medium",
     "question": "How many orders have discount greater than 0.10?",
     "answer": "7",
-    "task_type": "filter_then_count"
+    "task_type": "filter_then_count",
+    "grader_type": "exact_match"
   },
   {
     "id": "q6",
+    "difficulty": "hard",
     "question": "Which customer placed the highest unit_price order?",
     "answer": "C013",
-    "task_type": "sort_then_lookup"
+    "task_type": "sort_then_lookup",
+    "grader_type": "exact_match"
   },
   {
     "id": "q7",
+    "difficulty": "easy",
     "question": "What is the minimum unit price in Groceries?",
     "answer": "180",
-    "task_type": "filter_then_aggregate"
+    "task_type": "filter_then_aggregate",
+    "grader_type": "numeric_tolerance"
   },
   {
     "id": "q8",
+    "difficulty": "easy",
     "question": "How many total orders are delivered?",
     "answer": "23",
-    "task_type": "filter_then_count"
+    "task_type": "filter_then_count",
+    "grader_type": "exact_match"
   },
   {
     "id": "q9",
+    "difficulty": "medium",
     "question": "Which category appears most often?",
     "answer": "Electronics",
-    "task_type": "groupby_then_max"
+    "task_type": "groupby_then_max",
+    "grader_type": "exact_match"
   },
   {
     "id": "q10",
+    "difficulty": "easy",
     "question": "What is the maximum discount value?",
     "answer": "0.25",
-    "task_type": "aggregate"
+    "task_type": "aggregate",
+    "grader_type": "numeric_tolerance"
   },
   {
     "id": "q11",
+    "difficulty": "easy",
     "question": "How many orders are in the East region?",
     "answer": "7",
-    "task_type": "filter_then_count"
+    "task_type": "filter_then_count",
+    "grader_type": "exact_match"
   },
   {
     "id": "q12",
+    "difficulty": "medium",
     "question": "What is the total quantity of all Electronics orders?",
     "answer": "22",
-    "task_type": "filter_then_aggregate"
+    "task_type": "filter_then_aggregate",
+    "grader_type": "exact_match"
   },
   {
     "id": "q13",
+    "difficulty": "hard",
     "question": "How many unique customers are in the dataset?",
     "answer": "20",
-    "task_type": "unique_count"
+    "task_type": "unique_count",
+    "grader_type": "exact_match"
   }
 ]

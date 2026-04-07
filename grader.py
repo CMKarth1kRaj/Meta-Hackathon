@@ -110,6 +110,30 @@ def grade_episode(state_dict: dict, question: str) -> EpisodeReport:
 
 
 # ---------------------------------------------------------------------------
+# Normalised score (0.0 – 1.0) — required by OpenEnv task spec
+# ---------------------------------------------------------------------------
+
+def score_episode(state_dict: dict) -> dict:
+    """Return a normalized score dict suitable for OpenEnv leaderboards.
+
+    Returns
+    -------
+    dict with keys: task_id, score (0.0-1.0), correct (bool), steps_used, invalid_actions
+    """
+    submitted = state_dict.get("submitted_answer")
+    truth = state_dict.get("correct_answer", "")
+    correct = is_correct(submitted, truth) if submitted is not None else False
+
+    return {
+        "task_id": state_dict.get("question_id", ""),
+        "score": 1.0 if correct else 0.0,
+        "correct": correct,
+        "steps_used": state_dict.get("step_count", 0),
+        "invalid_actions": state_dict.get("invalid_actions", 0),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Batch grading
 # ---------------------------------------------------------------------------
 

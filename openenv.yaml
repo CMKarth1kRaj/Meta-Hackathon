@@ -1,0 +1,57 @@
+name: csv-analyst-env
+description: >
+  An OpenEnv-compatible reinforcement-learning environment for benchmarking
+  agents on structured CSV reasoning tasks. In each episode, an agent receives
+  a question about a CSV dataset and must use a constrained action set to
+  inspect columns, filter data, compute aggregates, and submit a final answer.
+version: 0.1.0
+author: CM Karthik Raj
+tags:
+  - openenv
+  - csv
+  - tabular-reasoning
+  - data-analysis
+  - benchmark
+
+entrypoint:
+  type: http
+  path: server.app:app
+  port: 8000
+  framework: fastapi
+
+models:
+  action: models.CSVAction
+  observation: models.CSVObservation
+  state: models.CSVState
+
+interface:
+  reset:
+    method: POST
+    path: /reset
+    body:
+      task_id: optional[string]
+  step:
+    method: POST
+    path: /step
+    body: CSVAction
+  state:
+    method: GET
+    path: /state
+
+episode:
+  max_steps: 8
+  reward_range: [-1.75, 1.20]
+  termination: submit_answer or max_steps_exceeded
+
+grading:
+  type: deterministic
+  score_range: [0.0, 1.0]
+  grader_module: grader
+
+tasks:
+  count: 13
+  source: tasks/tasks.json
+  difficulty_levels:
+    - easy
+    - medium
+    - hard
