@@ -106,7 +106,7 @@ csv-analyst-env/
 ├── LICENSE
 ├── .gitignore
 ├── data/
-│   └── orders.csv          # 30-row sample dataset
+│   └── orders.csv          # 30-row sample dataset (Synthetically generated to mimic real e-commerce data)
 ├── tasks/
 │   └── tasks.json          # 13 tasks (easy/medium/hard) with ground-truth
 ├── models.py               # Typed Pydantic models (Action, Observation, State)
