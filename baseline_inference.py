@@ -20,20 +20,20 @@ import json
 import os
 import sys
 import requests
+from huggingface_hub import InferenceClient
 
 # ---------------------------------------------------------------------------
 # Config from env vars
 # ---------------------------------------------------------------------------
 HF_TOKEN = os.getenv("HF_TOKEN")
 ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:8000").rstrip("/")
-HF_MODEL_ID = os.getenv("HF_MODEL_ID", "mistralai/Mistral-7B-Instruct-v0.2")
+HF_MODEL_ID = os.getenv("HF_MODEL_ID", "meta-llama/Meta-Llama-3-8B-Instruct")
 
 if not HF_TOKEN:
     print("⚠️  HF_TOKEN not set. Set it with: export HF_TOKEN=hf_...")
     print("    Running in HEURISTIC mode (no LLM calls).")
 
-HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL_ID}"
-HF_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {}
+client = InferenceClient(model=HF_MODEL_ID, token=HF_TOKEN) if HF_TOKEN else None
 
 # ---------------------------------------------------------------------------
 # Environment HTTP client
@@ -89,29 +89,27 @@ Reply with JSON only, no explanation."""
 
 
 def llm_pick_action(question: str, obs: dict, step: int) -> dict:
-    """Call the HF Inference API to pick the next action."""
-    if not HF_TOKEN:
+    """Call the HF Inference API to pick the next action using modern InferenceClient."""
+    if not client:
         return _heuristic_action(step)
 
     history_str = json.dumps(obs.get("visible_data", {}), indent=2)
-    prompt = f"""{SYSTEM_PROMPT}
-
-Question: {question}
-Step: {step}
-Last visible data:
-{history_str}
-
-Next action JSON:"""
+    prompt = f"Question: {question}\nStep: {step}\nLast visible data:\n{history_str}"
 
     try:
-        resp = requests.post(
-            HF_API_URL,
-            headers=HF_HEADERS,
-            json={"inputs": prompt, "parameters": {"max_new_tokens": 100, "temperature": 0.1}},
-            timeout=30,
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ]
+        
+        resp = client.chat_completion(
+            messages=messages,
+            max_tokens=200,
+            temperature=0.1,
         )
-        resp.raise_for_status()
-        text = resp.json()[0]["generated_text"]
+        
+        text = resp.choices[0].message.content
+        
         # Extract JSON from the generated text
         start = text.rfind("{")
         end = text.rfind("}") + 1

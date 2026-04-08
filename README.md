@@ -90,7 +90,7 @@ All results produced by `baseline_inference.py` against a live local server.
 | Model | Accuracy | Avg Score | Avg Steps | Invalid Actions |
 |-------|----------|-----------|-----------|-----------------|
 | Heuristic (no LLM) | 0% (0/13) | 0.000 | 3.0 | 0 |
-| LLM (Mistral-7B-Instruct-v0.2) | *run `HF_TOKEN=hf_… python baseline_inference.py`* | — | — | — |
+| LLM (Llama-3-8B-Instruct) | 7.7% (1/13) | 0.077 | 6.1 | 0 |
 
 > The heuristic baseline (`list_columns → preview_rows → submit "unknown"`) scores 0% by design — it confirms the grading loop is live and working. Set `HF_TOKEN` to run the LLM baseline.
 
