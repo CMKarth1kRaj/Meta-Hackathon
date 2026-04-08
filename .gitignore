@@ -10,3 +10,6 @@ ENV/
 .DS_Store
 *.csv
 !data/orders.csv
+
+# Generated evaluation output
+baseline_results.json

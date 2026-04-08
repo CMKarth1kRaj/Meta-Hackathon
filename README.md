@@ -85,14 +85,14 @@ python baseline_inference.py
 
 ## 📊 Baseline Performance
 
-Results from the heuristic baseline (no LLM, used to validate the evaluation loop):
+All results produced by `baseline_inference.py` against a live local server.
 
 | Model | Accuracy | Avg Score | Avg Steps | Invalid Actions |
 |-------|----------|-----------|-----------|-----------------|
-| Heuristic (no LLM) | 0% | 0.00 | 3.0 | 0 |
-| *LLM baseline (pending HF run)* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Heuristic (no LLM) | 0% (0/13) | 0.000 | 3.0 | 0 |
+| LLM (Mistral-7B-Instruct-v0.2) | *run `HF_TOKEN=hf_… python baseline_inference.py`* | — | — | — |
 
-> Run `python baseline_inference.py` after setting `HF_TOKEN` to populate the LLM row.
+> The heuristic baseline (`list_columns → preview_rows → submit "unknown"`) scores 0% by design — it confirms the grading loop is live and working. Set `HF_TOKEN` to run the LLM baseline.
 
 ---
 
@@ -126,8 +126,8 @@ csv-analyst-env/
 
 | Difficulty | Count | Example Question |
 |------------|-------|-----------------|
-| **Easy** | 5 | "How many total orders are delivered?" |
-| **Medium** | 6 | "Which category has the highest total quantity sold?" |
+| **Easy** | 6 | "How many total orders are delivered?" |
+| **Medium** | 5 | "Which category has the highest total quantity sold?" |
 | **Hard** | 2 | "Which customer placed the highest unit_price order?" |
 
 ---
