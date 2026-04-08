@@ -26,7 +26,7 @@ from huggingface_hub import InferenceClient
 # Config from env vars
 # ---------------------------------------------------------------------------
 HF_TOKEN = os.getenv("HF_TOKEN")
-ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:8000").rstrip("/")
+ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860").rstrip("/")
 HF_MODEL_ID = os.getenv("HF_MODEL_ID", "meta-llama/Meta-Llama-3-8B-Instruct")
 
 if not HF_TOKEN:

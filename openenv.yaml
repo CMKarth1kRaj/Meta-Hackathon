@@ -16,7 +16,7 @@ tags:
 entrypoint:
   type: http
   path: server.app:app
-  port: 8000
+  port: 7860
   framework: fastapi
 
 models:

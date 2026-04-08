@@ -1,7 +1,10 @@
 ---
 title: CSVAnalystEnv
+emoji: 📊
+colorFrom: blue
+colorTo: indigo
 sdk: docker
-app_port: 8000
+app_port: 7860
 tags:
   - openenv
   - tabular-reasoning
@@ -71,7 +74,7 @@ python run_eval.py
 
 ### 4. Start the HTTP server
 ```bash
-uvicorn server.app:app --host 0.0.0.0 --port 8000
+uvicorn server.app:app --host 0.0.0.0 --port 7860
 ```
 
 ### 5. Run LLM baseline evaluation
@@ -105,6 +108,7 @@ csv-analyst-env/
 ├── requirements.txt
 ├── LICENSE
 ├── .gitignore
+├── Dockerfile              # Container deployment (HF Spaces optimized) ✅
 ├── data/
 │   └── orders.csv          # 30-row sample dataset (Synthetically generated to mimic real e-commerce data)
 ├── tasks/
@@ -116,8 +120,7 @@ csv-analyst-env/
 ├── run_eval.py             # Full benchmark script (all 13 tasks)
 ├── baseline_inference.py   # LLM baseline via HF Inference API
 └── server/
-    ├── app.py              # FastAPI HTTP wrapper
-    └── Dockerfile          # Container deployment
+    └── app.py              # FastAPI HTTP wrapper
 ```
 
 ---
@@ -161,17 +164,17 @@ csv-analyst-env/
 
 ```bash
 # Reset to task q1
-curl -X POST http://localhost:8000/reset \
+curl -X POST http://localhost:7860/reset \
   -H "Content-Type: application/json" \
   -d '{"task_id": "q1"}'
 
 # List columns
-curl -X POST http://localhost:8000/step \
+curl -X POST http://localhost:7860/step \
   -H "Content-Type: application/json" \
   -d '{"action_type": "list_columns"}'
 
 # Submit answer
-curl -X POST http://localhost:8000/step \
+curl -X POST http://localhost:7860/step \
   -H "Content-Type: application/json" \
   -d '{"action_type": "submit_answer", "answer": "8"}'
 ```
@@ -181,8 +184,8 @@ curl -X POST http://localhost:8000/step \
 ## 🐳 Docker
 
 ```bash
-docker build -t csv-analyst-env -f server/Dockerfile .
-docker run -p 8000:8000 csv-analyst-env
+docker build -t csv-analyst-env .
+docker run -p 7860:7860 csv-analyst-env
 ```
 
 ---
