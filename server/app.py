@@ -75,154 +75,168 @@ def root():
       <style>
         body {
           margin: 0;
-          padding: 0;
+          padding: 20px;
           font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-          background: #050816;
-          color: #e5e7eb;
+          background: #0f172a;
+          color: #e2e8f0;
           display: flex;
           min-height: 100vh;
           align-items: center;
           justify-content: center;
         }
         .card {
-          max-width: 720px;
-          width: 90%;
-          padding: 32px;
-          border-radius: 20px;
-          background: radial-gradient(circle at top left, #111827 0, #020617 45%, #000000 100%);
+          max-width: 800px;
+          width: 100%;
+          padding: 40px;
+          border-radius: 24px;
+          background: linear-gradient(145deg, #1e293b, #0f172a);
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-          border: 1px solid rgba(148,163,184,0.2);
-          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
         h1 {
-          margin: 0 0 8px;
-          font-size: 2rem;
+          margin: 0 0 10px;
+          font-size: 2.5rem;
           font-weight: 800;
-          background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+          background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          letter-spacing: -0.02em;
         }
         .tagline {
-          margin: 0 0 24px;
-          color: #94a3b8;
           font-size: 1.1rem;
-          line-height: 1.5;
+          color: #94a3b8;
+          margin-bottom: 30px;
         }
-        .pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 4px 12px;
-          border-radius: 999px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          background: rgba(34, 197, 94, 0.1);
-          border: 1px solid rgba(34, 197, 94, 0.3);
-          color: #4ade80;
-          margin-bottom: 16px;
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 15px;
+          margin-bottom: 30px;
         }
-        .pill span {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #22c55e;
-          box-shadow: 0 0 10px #22c55e;
+        .stat-box {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 12px;
+          padding: 15px;
+          text-align: center;
         }
-        .section-title {
-          margin: 24px 0 8px;
-          font-size: 0.85rem;
-          text-transform: uppercase;
+        .stat-value {
+          font-size: 1.5rem;
           font-weight: 700;
-          letter-spacing: 0.1em;
+          color: #f8fafc;
+          margin-bottom: 5px;
+        }
+        .stat-label {
+          font-size: 0.8rem;
           color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
-        ul {
-          margin: 0;
-          padding-left: 1.2rem;
+        .grid-2 {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 30px;
+          margin-bottom: 30px;
+        }
+        @media (max-width: 600px) {
+          .grid-2 { grid-template-columns: 1fr; }
+        }
+        h2 {
+          font-size: 1.2rem;
+          color: #e2e8f0;
+          margin-bottom: 15px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          padding-bottom: 10px;
+        }
+        p, li {
           font-size: 0.95rem;
+          line-height: 1.6;
           color: #cbd5e1;
-          list-style-type: square;
         }
+        ul { padding-left: 20px; }
         li { margin-bottom: 8px; }
         code {
-          background: rgba(255, 255, 255, 0.1);
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-family: ui-monospace, monospace;
+          background: rgba(56, 189, 248, 0.1);
           color: #38bdf8;
+          padding: 3px 6px;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 0.9em;
         }
-        .links {
+        .btn-group {
           display: flex;
           flex-wrap: wrap;
-          gap: 12px;
-          margin-top: 32px;
+          gap: 10px;
+          justify-content: center;
+          margin-top: 40px;
         }
         .btn {
-          display: inline-flex;
-          align-items: center;
-          padding: 10px 20px;
-          border-radius: 12px;
-          font-size: 0.9rem;
+          padding: 12px 24px;
+          border-radius: 99px;
           font-weight: 600;
+          font-size: 0.95rem;
           text-decoration: none;
-          transition: all 0.2s ease;
+          transition: all 0.2s;
         }
         .btn-primary {
           background: #38bdf8;
-          color: #020617;
+          color: #0f172a;
         }
-        .btn-primary:hover {
-          background: #7dd3fc;
-          transform: translateY(-1px);
-        }
+        .btn-primary:hover { background: #0ea5e9; transform: translateY(-2px); }
         .btn-secondary {
-          background: rgba(255, 255, 255, 0.05);
-          color: #fff;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .btn-secondary:hover {
           background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.2);
+          color: #f8fafc;
         }
-        .meta {
-          margin-top: 32px;
-          padding-top: 24px;
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
-          font-size: 0.8rem;
-          color: #475569;
-          text-align: center;
-        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); transform: translateY(-2px); }
       </style>
     </head>
     <body>
-      <main class="card">
-        <div class="pill"><span></span> LIVE ENVIRONMENT</div>
+      <div class="card">
         <h1>CSVAnalystEnv</h1>
-        <p class="tagline">
-          An OpenEnv-compatible benchmark for data-analysis agents. Test your models on tabular reasoning, filtering, and aggregation tasks.
-        </p>
+        <div class="tagline">An OpenEnv-compatible benchmark for tabular reasoning agents.</div>
 
-        <div class="section">
-          <p class="section-title">Available Endpoints</p>
-          <ul>
-            <li><code>GET /tasks</code> – View the 13 evaluation tasks</li>
-            <li><code>POST /reset</code> – Initialize a new episode</li>
-            <li><code>POST /step</code> – Perform analytical actions</li>
-            <li><code>GET /state</code> – Inspect environment state</li>
-          </ul>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-value">13</div>
+            <div class="stat-label">Evaluation Tasks</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">3</div>
+            <div class="stat-label">Difficulty Levels</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">OpenEnv Compliant</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">Live</div>
+            <div class="stat-label">FastAPI HTTP</div>
+          </div>
         </div>
 
-        <div class="links">
-          <a class="btn btn-primary" href="/docs">Interactive API Docs</a>
-          <a class="btn btn-secondary" href="https://github.com/CMKarth1kRaj/Meta-Hackathon" target="_blank">View on GitHub</a>
-          <a class="btn btn-secondary" href="/tasks">View Tasks</a>
+        <div class="grid-2">
+          <div>
+            <h2>How it works</h2>
+            <p>Agents interact with a fixed CSV dataset representing e-commerce orders. Instead of writing raw code, agents must use a constrained action space (like <code>filter_rows</code> or <code>groupby_aggregate</code>) to explore the data and find the answer.</p>
+            <p>The environment enforces strict programmatic grading, limits episode length, and shapes behavior via normalized rewards (+1 for success, penalties for invalid tool use).</p>
+          </div>
+          <div>
+            <h2>Core Endpoints</h2>
+            <ul>
+               <li><code>GET /tasks</code> lists the question bank.</li>
+               <li><code>POST /reset</code> begins an episode.</li>
+               <li><code>POST /step</code> submits an action and returns the next observation.</li>
+               <li><code>GET /state</code> returns the full episode transcript.</li>
+            </ul>
+          </div>
         </div>
 
-        <div class="meta">
-          Built for Meta PyTorch OpenEnv Hackathon 2024
+        <div class="btn-group">
+          <a href="/docs" class="btn btn-primary">Open API Docs</a>
+          <a href="/tasks" class="btn btn-secondary">View Tasks</a>
+          <a href="/health" class="btn btn-secondary">Health Check</a>
+          <a href="https://github.com/CMKarth1kRaj/Meta-Hackathon" target="_blank" class="btn btn-secondary">GitHub Repo</a>
         </div>
-      </main>
+      </div>
     </body>
     </html>
     """
