@@ -10,8 +10,12 @@ dependencies = [
   "fastapi>=0.100.0",
   "uvicorn>=0.23.0",
   "requests>=2.31.0",
-  "huggingface_hub>=0.20.0"
+  "huggingface_hub>=0.20.0",
+  "openenv>=0.1.0"
 ]
+
+[project.scripts]
+server = "server.app:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

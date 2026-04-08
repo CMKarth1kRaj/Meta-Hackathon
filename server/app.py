@@ -284,3 +284,13 @@ def state():
         return env.state()
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+def main():
+    import uvicorn
+    # Use the port defined in models or common for this project (7860)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
+
+
+if __name__ == "__main__":
+    main()
