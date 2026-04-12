@@ -49,76 +49,93 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
 # LLM Logic
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are an expert data analyst agent operating in a CSV analysis environment.
-Your goal is to answer the user's question accurately within 8 steps.
+SYSTEM_PROMPT = """You are a careful, step-by-step data analyst operating in a CSV analysis environment.
 
-AVAILABLE ACTIONS:
-- {"action_type": "list_columns"}: Returns all column names.
-- {"action_type": "preview_rows", "n": 5}: Returns the first n rows.
-- {"action_type": "get_unique_values", "column": "col_name"}: Returns unique values in a column.
-- {"action_type": "filter_rows", "column": "col_name", "operator": "==", "value": "val"}: Filter rows.
-- {"action_type": "aggregate", "column": "col_name", "agg": "sum"}: Perform aggregation.
-- {"action_type": "groupby_aggregate", "group_column": "col_A", "value_column": "col_B", "agg": "sum"}
-- {"action_type": "submit_answer", "answer": "your_answer_as_string"}
+You can ONLY act by returning a JSON object with these fields:
+- "action_type": one of ["list_columns", "preview_rows", "get_unique_values", "filter_rows", "aggregate", "groupby_aggregate", "submit_answer"].
 
-CRITICAL RULES:
-1. Respond ONLY with a valid JSON action object.
-2. You have a maximum of 8 steps. You MUST call "submit_answer" before or at Step 8.
-3. NEVER repeat an exploratory action (like list_columns or preview_rows) more than once.
-4. If you have already filtered by a column, do not filter by it again unless you are narrowing down.
-5. Once you have seen the data you need, call "submit_answer" IMMEDIATELY.
+Optional fields depending on the action:
+- preview_rows: { "action_type": "preview_rows", "n": <int> }
+- get_unique_values: { "action_type": "get_unique_values", "column": "<col>" }
+- filter_rows: {
+    "action_type": "filter_rows",
+    "column": "<col>",
+    "operator": "== or != or > or < or >= or <=",
+    "value": "<value>"
+  }
+- aggregate: {
+    "action_type": "aggregate",
+    "column": "<numeric col>",
+    "agg": "sum or mean or count or max or min"
+  }
+- groupby_aggregate: {
+    "action_type": "groupby_aggregate",
+    "group_column": "<col>",
+    "value_column": "<numeric col>",
+    "agg": "sum or mean or count or max or min"
+  }
+- submit_answer: { "action_type": "submit_answer", "answer": "<final answer>" }
 
-STRATEGY:
-- Steps 1-2: Inspect schema and sample data.
-- Steps 3-6: Perform specific analysis or filtering.
-- Steps 7-8: You MUST call "submit_answer". If this is Step 8, this is your LAST chance to submit."""
+Rules:
+1. Use at most one action per step.
+2. Avoid repeating the same action_type with the same arguments.
+3. First inspect the data (list_columns, preview_rows, get_unique_values, filter_rows), then compute (aggregate or groupby_aggregate), then finish with submit_answer.
+4. By the last step you MUST call submit_answer with your best guess.
 
-def validate_and_coerce_action(action: dict, step: int) -> dict:
-    """Fixes common LLM formatting errors and enforces submission on the final step."""
-    if not isinstance(action, dict):
+Reply with JSON ONLY, no explanation or extra text.
+"""
+
+def heuristic_action(step: int) -> dict:
+    if step == 1:
         return {"action_type": "list_columns"}
-    
-    action_type = action.get("action_type")
-    
-    # If Step 8 and not submitting, try to force it or at least warn
-    if step == MAX_STEPS and action_type != "submit_answer":
-        # Force submit_answer if we can find an answer or just 'unknown'
-        ans = action.get("answer") or action.get("result") or "insufficient_limit"
+    elif step == 2:
+        return {"action_type": "preview_rows", "n": 5}
+    else:
+        return {"action_type": "submit_answer", "answer": "unknown"}
+
+def coerce_action(raw: dict, step: int, max_steps: int, obs: dict, history: List[dict]) -> dict:
+    """Make the action safe & useful without always reverting to list_columns."""
+    action_type = raw.get("action_type")
+
+    # Force submit on very last step
+    if step >= max_steps and action_type != "submit_answer":
+        ans = raw.get("answer") or raw.get("result") or "unknown"
         return {"action_type": "submit_answer", "answer": str(ans)}
 
+    # Unknown or missing type -> fall back but try not to repeat
     if action_type not in [
         "list_columns", "preview_rows", "get_unique_values", 
         "filter_rows", "aggregate", "groupby_aggregate", "submit_answer"
     ]:
-        action["action_type"] = "list_columns"
+        seen_list = any(h.get("action", {}).get("action_type") == "list_columns" for h in history)
+        if not seen_list:
+            return {"action_type": "list_columns"}
+        return {"action_type": "preview_rows", "n": 5}
+
+    if action_type == "preview_rows":
+        n = raw.get("n") or 5
+        return {"action_type": "preview_rows", "n": int(n)}
 
     if action_type == "submit_answer":
-        if "answer" in action:
-            action["answer"] = str(action["answer"])
-        else:
-            action["answer"] = "unknown"
-            
-    return action
+        ans = raw.get("answer")
+        if ans is None:
+            vis = obs.get("visible_data", {}) or {}
+            ans = vis.get("result") or vis.get("answer") or "unknown"
+        return {"action_type": "submit_answer", "answer": str(ans)}
 
-def get_llm_action(client: OpenAI, question: str, obs: dict, step: int, history: List[str]) -> dict:
+    return raw
+
+def get_llm_action(client: OpenAI, question: str, obs: dict, step: int, history: List[dict]) -> dict:
     """Calls the LLM with action history and explicit step context."""
-    history_block = "\n".join(history[-5:]) if history else "No previous actions."
+    history_json = json.dumps([h["action"] for h in history[-5:]], indent=2) if history else "[]"
     message_info = obs.get("message", "No message.")
-    visible_data = json.dumps(obs.get("visible_data", {}), indent=2)[:2000] # Cap size
+    visible_data = json.dumps(obs.get("visible_data", {}), indent=2)[:2000] 
     
-    # Forceful warning for the final step
-    final_warning = ""
-    if step == MAX_STEPS:
-        final_warning = "\n⚠️ WARNING: THIS IS YOUR LAST STEP. YOU MUST USE 'submit_answer' NOW OR YOU WILL FAIL."
-    elif step == MAX_STEPS - 1:
-        final_warning = "\n⚠️ WARNING: NEXT STEP IS THE FINAL STEP. START CONCLUDING YOUR ANALYSIS."
-
     user_prompt = (
-        f"QUESTION: {question}\n"
-        f"CURRENT STEP: {step} of {MAX_STEPS}{final_warning}\n"
-        f"ENV STATUS: {message_info}\n"
-        f"ACTION HISTORY:\n{history_block}\n"
-        f"LATEST OBSERVATION:\n{visible_data}\n\n"
+        f"Question: {question}\n"
+        f"Stage: {step} of {MAX_STEPS}\n\n"
+        f"Last Observation:\n{visible_data}\n\n"
+        f"Action History (recent):\n{history_json}\n"
         "Output ONLY the next JSON action:"
     )
     
@@ -130,19 +147,19 @@ def get_llm_action(client: OpenAI, question: str, obs: dict, step: int, history:
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.0,
-            max_tokens=200,
+            max_tokens=256,
         )
         text = completion.choices[0].message.content or ""
         start = text.find("{")
         end = text.rfind("}") + 1
         if start != -1 and end > start:
-            action_obj = json.loads(text[start:end])
-            return validate_and_coerce_action(action_obj, step)
+            raw_action = json.loads(text[start:end])
+            return coerce_action(raw_action, step, MAX_STEPS, obs, history)
             
     except Exception as exc:
         print(f"[DEBUG] Model failed at Step {step}: {exc}", flush=True, file=sys.stderr)
     
-    return {"action_type": "submit_answer", "answer": "error_fallback"} if step == MAX_STEPS else {"action_type": "list_columns"}
+    return coerce_action(heuristic_action(step), step, MAX_STEPS, obs, history)
 
 # ---------------------------------------------------------------------------
 # Environment Interaction
@@ -186,7 +203,7 @@ def main():
         question = stub["question"]
         
         rewards: List[float] = []
-        action_history: List[str] = [] # Track history for the prompt
+        history: List[dict] = [] 
         steps_taken = 0
         score = 0.01
         success = False
@@ -201,8 +218,8 @@ def main():
                 if done:
                     break
                 
-                # Logic to pick action (passing history)
-                action_obj = get_llm_action(client, question, obs, step, action_history)
+                # Logic to pick action (passing structured history)
+                action_obj = get_llm_action(client, question, obs, step, history)
                 action_str = json.dumps(action_obj)
                 
                 # Execute step
@@ -213,7 +230,12 @@ def main():
                     error = None
                     
                     # Store in history for the next step's prompt
-                    action_history.append(f"Step {step}: {action_str} -> {obs.get('message', 'ok')}")
+                    history.append({
+                        "step": step,
+                        "action": action_obj,
+                        "reward": reward,
+                        "message": obs.get("message", "ok")
+                    })
                 except Exception as e:
                     reward = -0.20 # penalty
                     done = True
@@ -226,6 +248,10 @@ def main():
                 
                 if done:
                     break
+            
+            # Safety: if we hit max_steps without done, force one last check for submitted_answer in state
+            if steps_taken >= MAX_STEPS and not done:
+                pass # The environment will handle termination at max steps automatically on next call or in state fetch
             
             # Final scoring (normalized)
             try:
