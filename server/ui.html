@@ -27,14 +27,7 @@
     <h2>CSV Analyst Interface</h2>
     <div style="display: flex; gap: 16px; align-items: center;">
       <select id="task-selector" onchange="resetWithSelectedTask()" style="padding: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
-        <option value="">Random Task</option>
-        <option value="q1">q1: Delivered orders in South (Easy)</option>
-        <option value="q2">q2: Category with highest quantity (Medium)</option>
-        <option value="q3">q3: Avg price for Clothing (Medium)</option>
-        <option value="q4">q4: Region with most cancelled (Easy)</option>
-        <option value="q5">q5: Discount > 0.10 (Medium)</option>
-        <option value="q6">q6: Top customer by unit price (Hard)</option>
-        <option value="q13">q13: Unique customers count (Hard)</option>
+        <option value="">Loading Tasks...</option>
       </select>
       <a href="/" style="color: #3b82f6; text-decoration: none; font-weight: 500;">&larr; Back to Landing Page</a>
     </div>
@@ -48,8 +41,9 @@
         <textarea id="action-input">{
   "action_type": "list_columns"
 }</textarea>
-        <div class="btn-group">
-          <button class="btn-primary" onclick="stepEnv()" id="step-btn">Execute Step</button>
+        <div class="btn-group" style="display: flex; gap: 10px;">
+          <button class="btn-primary" onclick="stepEnv()" id="step-btn" style="flex: 1;">Execute Step</button>
+          <button class="btn-secondary" onclick="getAgentAction()" title="Ask LLM for the next step">🤖 Suggest Step</button>
         </div>
         <div class="btn-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
           <button class="btn-secondary" onclick="resetEnv()">Reset (New Random)</button>
@@ -191,6 +185,42 @@
       }
     }
 
+    async function loadTasks() {
+      try {
+        const res = await fetch("/tasks");
+        const tasks = await res.json();
+        const selector = document.getElementById("task-selector");
+        selector.innerHTML = '<option value="">Random Task</option>';
+        tasks.forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t.id;
+          opt.textContent = `${t.id}: ${t.question.substring(0, 40)}...`;
+          selector.appendChild(opt);
+        });
+      } catch (e) { console.error("Failed to load tasks", e); }
+    }
+
+    async function getAgentAction() {
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = "AI Thinking...";
+      btn.disabled = true;
+      try {
+        const res = await fetch("/agent_action", { method: "POST" });
+        const action = await res.json();
+        if (res.ok) {
+          document.getElementById("action-input").value = JSON.stringify(action, null, 2);
+        } else {
+          alert("Agent Error: " + action.detail);
+        }
+      } catch (e) {
+        alert("Network error: " + e);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+
     async function getState() {
       try {
         const res = await fetch("/state");
@@ -200,12 +230,20 @@
         }
         const state = await res.json();
         renderState(state, null);
+        
+        // Update selector value if it matches current question_id
+        if (state.question_id) {
+          document.getElementById("task-selector").value = state.question_id;
+        }
+
       } catch (e) {
         document.getElementById("state-box").textContent = "Failed to fetch state: " + e;
       }
     }
     
+    loadTasks();
     getState();
   </script>
 </body>
 </html>
+

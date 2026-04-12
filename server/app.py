@@ -286,6 +286,35 @@ def step(action: CSVAction):
     return obs
 
 
+@app.post("/agent_action")
+def agent_action():
+    """Ask the LLM to recommend the next action based on current state."""
+    from agent_utils import get_llm_action, get_client
+    try:
+        current_state = env.state()
+        # We need the last observation to get the question text
+        # Since env doesn't store the full last obs in a simple way, 
+        # we reconstruct a minimal one for the prompt.
+        obs_dict = {
+            "question": next((t["question"] for t in TASKS if t["id"] == current_state.question_id), "N/A"),
+            "visible_data": current_state.history[-1]["observation"]["visible_data"] if current_state.history else {},
+            "message": "Providing recommendation..."
+        }
+        
+        client = get_client()
+        action = get_llm_action(
+            client=client,
+            question=obs_dict["question"],
+            obs=obs_dict,
+            step=current_state.step_count + 1,
+            history=current_state.history
+        )
+        return action
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agent error: {str(e)}")
+
+
+
 @app.get("/state", response_model=CSVState)
 def state():
     """Return current episode metadata."""
