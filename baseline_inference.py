@@ -114,11 +114,18 @@ def llm_pick_action(question: str, obs: dict, step: int) -> dict:
         start = text.rfind("{")
         end = text.rfind("}") + 1
         if start != -1 and end > start:
-            return json.loads(text[start:end])
+            action = json.loads(text[start:end])
+            if step >= 8 and action.get("action_type") != "submit_answer":
+                ans = action.get("answer") or action.get("result") or "unknown"
+                return {"action_type": "submit_answer", "answer": str(ans)}
+            return action
     except Exception as e:
         print(f"    LLM error: {e} — falling back to heuristic")
 
-    return _heuristic_action(step)
+    fallback = _heuristic_action(step)
+    if step >= 8 and fallback.get("action_type") != "submit_answer":
+        return {"action_type": "submit_answer", "answer": "unknown"}
+    return fallback
 
 
 def _heuristic_action(step: int) -> dict:
