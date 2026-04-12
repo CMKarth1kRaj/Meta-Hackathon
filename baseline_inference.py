@@ -137,7 +137,7 @@ def _heuristic_action(step: int) -> dict:
 # ---------------------------------------------------------------------------
 
 def compute_score(state: dict) -> dict:
-    """Return a normalized score dict (0.0-1.0) for this episode."""
+    """Return a normalized score dict (0.01-0.99) for this episode."""
     submitted = state.get("submitted_answer")
     truth = state.get("correct_answer", "")
     steps = state.get("step_count", 0)
@@ -164,7 +164,7 @@ def compute_score(state: dict) -> dict:
 
     return {
         "correct": correct,
-        "score": 1.0 if correct else 0.0,
+        "score": 0.99 if correct else 0.01,
         "steps_used": steps,
         "invalid_actions": invalid,
         "submitted": submitted,

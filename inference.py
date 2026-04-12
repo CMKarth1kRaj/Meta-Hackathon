@@ -188,7 +188,7 @@ def main():
         rewards: List[float] = []
         action_history: List[str] = [] # Track history for the prompt
         steps_taken = 0
-        score = 0.0
+        score = 0.01
         success = False
         
         log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
@@ -244,10 +244,10 @@ def main():
                     except:
                         return False
 
-                score = 1.0 if is_match(sub, truth) else 0.0
+                score = 0.99 if is_match(sub, truth) else 0.01
             except Exception as e:
                 # Fallback: if we got a big reward in any step, it's likely correct
-                score = 1.0 if any(r > 0.5 for r in rewards) else 0.0
+                score = 0.99 if any(r > 0.5 for r in rewards) else 0.01
             
             success = score >= SUCCESS_SCORE_THRESHOLD
             

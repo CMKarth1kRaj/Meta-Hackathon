@@ -12,11 +12,27 @@ tags:
   - reinforcement-learning
 ---
 
-# CSVAnalystEnv
+# 📊 CSVAnalystEnv: The Benchmark for Tabular Reasoning Agents
 
-An **OpenEnv-compatible** reinforcement-learning environment for evaluating data-analysis agents on structured CSV reasoning tasks.
+**CSVAnalystEnv** is a high-fidelity, **OpenEnv-compatible** reinforcement learning environment designed specifically to stress-test AI agents on **complex CSV data analysis tasks**.
 
-In each episode, an agent receives a question about a CSV dataset and must use a **constrained action set** to inspect columns, filter data, compute aggregates, and submit a final answer. The environment rewards correctness, penalizes invalid actions, and encourages efficient tool use.
+While many benchmarks allow agents to write arbitrary code, CSVAnalystEnv forces agents to interact with data through a **constrained, programmatic action space** (filtering, grouping, aggregating). This architecture cleanly separates an agent's *reasoning* ability from its *coding* proficiency, providing a pure measure of how well an LLM can plan and execute a multi-step data investigation strategy.
+
+### 🎯 The Core Mission
+Our environment bridges the gap between raw data and actionable insights. In each episode, an agent:
+1.  **Explores**: Discovers the schema and distributions of a real-world e-commerce dataset.
+2.  **Hypothesizes**: Determines which slices of data are relevant to a complex natural language question.
+3.  **Analyzes**: Uses precise tools like `groupby_aggregate` and `filter_rows` to extract answers.
+4.  **Submits**: Provides a final verified answer, graded against ground-truth with numeric tolerance.
+
+### 🛠️ Analytical Action Space
+Agents don't just "guess"; they have a professional toolkit at their disposal:
+- **`list_columns`**: Initial discovery of the data schema.
+- **`preview_rows`**: Visual inspection of data distributions and types.
+- **`filter_rows`**: Boolean logic filtering (e.g., `status == "Delivered"`).
+- **`aggregate`**: Statistical reduction (`sum`, `mean`, `max`, `min`).
+- **`get_unique_values`**: Inspection of categorical data cardinality.
+- **`groupby_aggregate`**: Advanced pivot-table style analysis for multi-dimensional reasoning.
 
 ---
 
@@ -24,7 +40,7 @@ In each episode, an agent receives a question about a CSV dataset and must use a
 
 - **Reproducible Benchmark**: Fixed dataset + 13 verified tasks for systematic agent evaluation.
 - **Constrained Tool Use**: Agents use discrete data tools (`filter`, `groupby`, `aggregate`) rather than arbitrary code or SQL.
-- **Exact Programmatic Grading**: Normalized `0.0–1.0` scores with numeric tolerance.
+- **Exact Programmatic Grading**: Normalized scores strictly within (0, 1) with numeric tolerance.
 - **OpenEnv Standards**: Fully compliant `reset/step/state` HTTP interface with typed Pydantic models.
 
 ---
@@ -39,7 +55,7 @@ In each episode, an agent receives a question about a CSV dataset and must use a
 | **Typed models** | `CSVAction`, `CSVObservation`, `CSVState` (Pydantic v2) |
 | **Reward signal** | Scalar per-step: base cost, success, invalid penalty |
 | **Episode semantics** | One question per episode, 8-step budget, deterministic grader |
-| **Score range** | `0.0` (incorrect) – `1.0` (correct) |
+| **Score range** | `0.01` (incorrect) – `0.99` (correct) |
 
 ---
 
@@ -115,7 +131,7 @@ csv-analyst-env/
 │   └── tasks.json          # 13 tasks (easy/medium/hard) with ground-truth
 ├── models.py               # Typed Pydantic models (Action, Observation, State)
 ├── environment.py          # Core environment — reset / step / state
-├── grader.py               # Programmatic grading + normalized 0.0–1.0 scores
+├── grader.py               # Programmatic grading + normalized (0, 1) scores
 ├── demo_run.py             # Single episode walkthrough
 ├── run_eval.py             # Full benchmark script (all 13 tasks)
 ├── baseline_inference.py   # LLM baseline via HF Inference API

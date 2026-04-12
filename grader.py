@@ -110,7 +110,7 @@ def grade_episode(state_dict: dict, question: str) -> EpisodeReport:
 
 
 # ---------------------------------------------------------------------------
-# Normalised score (0.0 – 1.0) — required by OpenEnv task spec
+# Normalised score (0.01 – 0.99) — required by OpenEnv task spec
 # ---------------------------------------------------------------------------
 
 def score_episode(state_dict: dict) -> dict:
@@ -118,7 +118,7 @@ def score_episode(state_dict: dict) -> dict:
 
     Returns
     -------
-    dict with keys: task_id, score (0.0-1.0), correct (bool), steps_used, invalid_actions
+    dict with keys: task_id, score (0.01-0.99), correct (bool), steps_used, invalid_actions
     """
     submitted = state_dict.get("submitted_answer")
     truth = state_dict.get("correct_answer", "")
@@ -126,7 +126,7 @@ def score_episode(state_dict: dict) -> dict:
 
     return {
         "task_id": state_dict.get("question_id", ""),
-        "score": 1.0 if correct else 0.0,
+        "score": 0.99 if correct else 0.01,
         "correct": correct,
         "steps_used": state_dict.get("step_count", 0),
         "invalid_actions": state_dict.get("invalid_actions", 0),
