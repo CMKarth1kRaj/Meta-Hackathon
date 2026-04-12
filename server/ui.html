@@ -77,40 +77,41 @@
   </div>
 
   <script>
-    function renderState(data) {
-      if (data.state) {
-        document.getElementById("state-box").textContent = JSON.stringify(data.state, null, 2);
+    let currentQuestion = "No question found. Click reset.";
+
+    function renderState(state, observation) {
+      if (state) {
+        document.getElementById("state-box").textContent = JSON.stringify(state, null, 2);
         
-        // Update summary
-        const s = data.state;
+        if (observation && observation.question) {
+          currentQuestion = observation.question;
+        }
+
         const summaryHtml = `
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <span class="badge badge-gray">Step: ${s.step_count || 0}/${s.max_steps || '?'}</span>
-            <span class="badge badge-gray">Task: ${s.question_id || 'N/A'}</span>
+            <span class="badge badge-gray">Step: ${state.step_count || 0}/${state.max_steps || '8'}</span>
+            <span class="badge badge-gray">Task: ${state.question_id || 'N/A'}</span>
           </div>
           <div style="margin-top: 8px; font-weight: 600; color: #111827;">
-            ${s.question || 'No question found. Click reset.'}
+            ${currentQuestion}
           </div>
         `;
         document.getElementById("state-summary").innerHTML = summaryHtml;
         
         // Enable step button if not done
-        document.getElementById("step-btn").disabled = s.done;
-        if (s.done) {
+        const isDone = state.done || (state.step_count >= state.max_steps) || !!state.submitted_answer;
+        document.getElementById("step-btn").disabled = isDone;
+        if (isDone) {
           document.getElementById("step-btn").style.opacity = "0.5";
           document.getElementById("step-btn").style.cursor = "not-allowed";
         } else {
           document.getElementById("step-btn").style.opacity = "1";
           document.getElementById("step-btn").style.cursor = "pointer";
         }
-
-      } else {
-        document.getElementById("state-box").textContent = JSON.stringify(data, null, 2);
       }
       
-      const obs = data.observation || (data.question ? data : null);
-      if (obs) {
-        document.getElementById("obs-box").textContent = JSON.stringify(obs, null, 2);
+      if (observation) {
+        document.getElementById("obs-box").textContent = JSON.stringify(observation, null, 2);
       }
     }
 
@@ -120,9 +121,7 @@
     }
 
     async function resetEnv(taskId) {
-      // Clear history visually
       document.getElementById("history-box").textContent = "No actions taken yet.";
-      
       const body = taskId ? { task_id: taskId } : {};
       
       try {
@@ -131,23 +130,24 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body) 
         });
-        const data = await res.json();
+        const obs = await res.json();
         
-        // After reset, we fetch the state to update the state box properly
-        await getState(); 
+        const stateRes = await fetch("/state");
+        const state = await stateRes.json();
+        
+        renderState(state, obs);
       } catch (e) {
         alert("Error resetting environment: " + e);
       }
     }
 
-    function renderStep(result, action) {
-      renderState(result);
+    function renderStep(obs, action) {
       const historyBox = document.getElementById("history-box");
       const line = {
         action,
-        reward: result.reward,
-        done: result.done,
-        message: result.message
+        reward: obs.reward,
+        done: obs.done,
+        message: obs.message
       };
       
       const isFirst = historyBox.textContent === "No actions taken yet.";
@@ -173,18 +173,18 @@
           body: JSON.stringify(action)
         });
         
-        const data = await res.json();
+        const obs = await res.json();
         if (!res.ok) {
-           alert("API Error: " + JSON.stringify(data));
+           alert("API Error: " + JSON.stringify(obs));
            return;
         }
         
-        renderStep(data, action);
+        renderStep(obs, action);
         
-        // Refresh full state to get updated history/steps
+        // Always fetch latest state after a step
         const stateRes = await fetch("/state");
-        const stateData = await stateRes.json();
-        document.getElementById("state-box").textContent = JSON.stringify(stateData, null, 2);
+        const state = await stateRes.json();
+        renderState(state, obs);
         
       } catch (e) {
         alert("Network error executing step: " + e);
@@ -195,18 +195,16 @@
       try {
         const res = await fetch("/state");
         if (!res.ok) {
-            // Environment likely hasn't been reset yet
             document.getElementById("state-box").textContent = "Environment not initialized. Call reset first.";
             return;
         }
-        const data = await res.json();
-        renderState({state: data});
+        const state = await res.json();
+        renderState(state, null);
       } catch (e) {
         document.getElementById("state-box").textContent = "Failed to fetch state: " + e;
       }
     }
     
-    // Initial fetch to see if env is already running
     getState();
   </script>
 </body>
