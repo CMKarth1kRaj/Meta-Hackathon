@@ -10,8 +10,7 @@
     .card { background: white; border: 1px solid #e5e7eb; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
     h3 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
     label { display: block; font-weight: 500; margin-bottom: 4px; color: #4b5563; font-size: 0.9rem;}
-    textarea { width: 100%; height: 100px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-family: monospace; box-sizing: border-box; resize: vertical; }
-    pre { background: #f9fafb; padding: 12px; border: 1px solid #e5e7eb; border-radius: 4px; max-height: 250px; overflow: auto; font-size: 0.85rem; margin-top: 0; }
+    pre.box { background: #f9fafb; padding: 12px; border: 1px solid #e5e7eb; border-radius: 4px; overflow: auto; font-size: 0.85rem; margin-top: 0; white-space: pre-wrap; word-wrap: break-word; }
     .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     button { padding: 8px 16px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
     .btn-primary { background-color: #3b82f6; color: white; }
@@ -51,18 +50,18 @@
       <div class="card" style="margin-top:16px;">
         <h3>Current State Summary</h3>
         <div id="state-summary" style="font-size: 0.9rem; margin-bottom: 12px;">Loading...</div>
-        <div class="box" id="state-box" style="display: none;"></div>
+        <pre class="box" id="state-box" style="display: none;"></pre>
       </div>
     </div>
 
     <div>
       <div class="card">
         <h3>Current Observation</h3>
-        <div class="box" id="obs-box">No observation yet.</div>
+        <pre class="box" id="obs-box">No observation yet.</pre>
       </div>
       <div class="card" style="margin-top:16px;">
         <h3>Action History</h3>
-        <div class="box" id="history-box" style="max-height: 400px;">No actions taken yet.</div>
+        <pre class="box" id="history-box" style="max-height: 400px; overflow-y: auto;">No actions taken yet.</pre>
       </div>
     </div>
   </div>
@@ -143,6 +142,11 @@
         const stateRes = await fetch("/state");
         const state = await stateRes.json();
         
+        // Sync Dropdown after a reset
+        if (state.question_id) {
+          document.getElementById("task-selector").value = state.question_id;
+        }
+
         renderState(state, obs);
       } catch (e) {
         alert("Error resetting environment: " + e);
@@ -193,9 +197,6 @@
         alert("Network error executing auto-step: " + e);
       } finally {
         btn.textContent = originalText;
-        if (!document.getElementById("step-btn").disabled) {
-           // renderState may have disabled it if episode done.
-        }
       }
     }
 
@@ -219,8 +220,12 @@
       }
     }
     
-    loadTasks();
-    getState();
+    async function init() {
+      await loadTasks();
+      await getState();
+    }
+    
+    init();
   </script>
 </body>
 </html>
