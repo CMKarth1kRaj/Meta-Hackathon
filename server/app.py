@@ -286,13 +286,15 @@ def step(action: CSVAction):
     return obs
 
 
-@app.post("/agent_action")
-def agent_action():
-    """Ask the LLM to recommend the next action based on current state."""
+@app.post("/auto_step", response_model=CSVObservation)
+def auto_step():
+    """Ask the LLM for the next action and execute it immediately."""
     from agent_utils import get_llm_action, get_client
     try:
         current_state = env.state()
-        
+        if current_state.step_count >= current_state.max_steps or current_state.submitted_answer:
+            raise HTTPException(status_code=400, detail="Episode already finished.")
+            
         # Get the latest visible data from history if available, else initial state
         last_vis = {}
         if current_state.history:
@@ -308,16 +310,28 @@ def agent_action():
         }
         
         client = get_client()
-        action = get_llm_action(
+        action_dict, source = get_llm_action(
             client=client,
             question=obs_dict["question"],
             obs=obs_dict,
             step=current_state.step_count + 1,
             history=current_state.history
         )
-        return action
+
+        # Execute in environment
+        action = CSVAction(**action_dict)
+        obs = env.step(action)
+        
+        # Modify the observation message to show which model took the action
+        obs.message = f"{obs.message} | Action by: {source}"
+        
+        # Modify the latest history entry as well
+        if env.state_obj and env.state_obj.history:
+            env.state_obj.history[-1]["message"] = obs.message
+            
+        return obs
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Agent error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Auto-Agent error: {str(e)}")
 
 
 

@@ -110,7 +110,7 @@ def main():
                     break
                 
                 # Logic to pick action (passing structured history)
-                action_obj = get_llm_action(client, question, obs, step, history)
+                action_obj, agent_source = get_llm_action(client, question, obs, step, history)
                 action_str = json.dumps(action_obj)
                 
                 # Execute step

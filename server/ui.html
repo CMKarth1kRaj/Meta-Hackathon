@@ -36,36 +36,33 @@
   <div class="layout">
     <div>
       <div class="card">
-        <h3>Take Action</h3>
-        <label>Action JSON:</label>
-        <textarea id="action-input">{
-  "action_type": "list_columns"
-}</textarea>
+        <h3>Auto-Agent Controls</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px;">
+          Click "Execute Agent Step" to have the AI model decide and perform the next analytical action on the environment.
+        </p>
         <div class="btn-group" style="display: flex; gap: 10px;">
-          <button class="btn-primary" onclick="stepEnv()" id="step-btn" style="flex: 1;">Execute Step</button>
-          <button class="btn-secondary" onclick="getAgentAction()" title="Ask LLM for the next step">🤖 Suggest Step</button>
+          <button class="btn-primary" onclick="autoStepEnv()" id="step-btn" style="flex: 1;">Execute Agent Step</button>
         </div>
         <div class="btn-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
           <button class="btn-secondary" onclick="resetEnv()">Reset (New Random)</button>
-          <button class="btn-secondary" onclick="getState()">Refresh State</button>
         </div>
       </div>
 
       <div class="card" style="margin-top:16px;">
         <h3>Current State Summary</h3>
-        <div id="state-summary" style="font-size: 0.9rem; margin-bottom: 12px;"></div>
-        <pre id="state-box">No state yet. Click 'Reset Environment' to start.</pre>
+        <div id="state-summary" style="font-size: 0.9rem; margin-bottom: 12px;">Loading...</div>
+        <div class="box" id="state-box" style="display: none;"></div>
       </div>
     </div>
 
     <div>
       <div class="card">
         <h3>Current Observation</h3>
-        <pre id="obs-box">No observation yet.</pre>
+        <div class="box" id="obs-box">No observation yet.</div>
       </div>
       <div class="card" style="margin-top:16px;">
         <h3>Action History</h3>
-        <pre id="history-box">No actions taken yet.</pre>
+        <div class="box" id="history-box" style="max-height: 400px;">No actions taken yet.</div>
       </div>
     </div>
   </div>
@@ -79,6 +76,13 @@
         
         if (observation && observation.question) {
           currentQuestion = observation.question;
+        } else if (state.question_id) {
+            const sel = document.getElementById("task-selector");
+            for(let i=0; i<sel.options.length; i++) {
+                if (sel.options[i].value === state.question_id) {
+                    currentQuestion = sel.options[i].textContent.substring(sel.options[i].value.length + 2);
+                }
+            }
         }
 
         const summaryHtml = `
@@ -92,21 +96,31 @@
         `;
         document.getElementById("state-summary").innerHTML = summaryHtml;
         
-        // Enable step button if not done
         const isDone = state.done || (state.step_count >= state.max_steps) || !!state.submitted_answer;
-        document.getElementById("step-btn").disabled = isDone;
-        if (isDone) {
-          document.getElementById("step-btn").style.opacity = "0.5";
-          document.getElementById("step-btn").style.cursor = "not-allowed";
-        } else {
-          document.getElementById("step-btn").style.opacity = "1";
-          document.getElementById("step-btn").style.cursor = "pointer";
-        }
+        const btn = document.getElementById("step-btn");
+        btn.disabled = isDone;
+        btn.style.opacity = isDone ? "0.5" : "1";
+        btn.style.cursor = isDone ? "not-allowed" : "pointer";
       }
       
       if (observation) {
         document.getElementById("obs-box").textContent = JSON.stringify(observation, null, 2);
       }
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch("/tasks");
+        const tasks = await res.json();
+        const selector = document.getElementById("task-selector");
+        selector.innerHTML = '<option value="">Random Task</option>';
+        tasks.forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t.id;
+          opt.textContent = `${t.id}: ${t.question.substring(0, 40)}...`;
+          selector.appendChild(opt);
+        });
+      } catch (e) { console.error("Failed to load tasks", e); }
     }
 
     async function resetWithSelectedTask() {
@@ -148,81 +162,40 @@
       const newEntry = JSON.stringify(line, null, 2);
       historyBox.textContent = (isFirst ? "" : historyBox.textContent + "\n\n") + newEntry;
       historyBox.scrollTop = historyBox.scrollHeight;
-
-      // After a step, we reset the action input to something neutral or clear it
-      // to avoid accidental double-execution of the same action.
-      // But for now, let's leave it as is so user can iterate.
     }
 
-
-    async function stepEnv() {
-      const raw = document.getElementById("action-input").value;
-      let action;
-      try { 
-        action = JSON.parse(raw); 
-      } catch (e) { 
-        alert("Invalid JSON format in action input:\n" + e.message); 
-        return; 
-      }
+    async function autoStepEnv() {
+      const btn = document.getElementById("step-btn");
+      const originalText = btn.textContent;
+      btn.textContent = "AI Thinking & Executing...";
+      btn.disabled = true;
 
       try {
-        const res = await fetch("/step", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(action)
-        });
-        
+        const res = await fetch("/auto_step", { method: "POST" });
         const obs = await res.json();
+        
         if (!res.ok) {
-           alert("API Error: " + JSON.stringify(obs));
+           alert("API Error: " + (obs.detail || JSON.stringify(obs)));
            return;
         }
         
-        renderStep(obs, action);
-        
-        // Always fetch latest state after a step
         const stateRes = await fetch("/state");
         const state = await stateRes.json();
+        
+        // Find the action that was actually taken from the state history
+        const lastHistory = state.history && state.history.length > 0 ? state.history[state.history.length - 1] : null;
+        const action = lastHistory ? lastHistory.action : {};
+        
+        renderStep(obs, action);
         renderState(state, obs);
         
       } catch (e) {
-        alert("Network error executing step: " + e);
-      }
-    }
-
-    async function loadTasks() {
-      try {
-        const res = await fetch("/tasks");
-        const tasks = await res.json();
-        const selector = document.getElementById("task-selector");
-        selector.innerHTML = '<option value="">Random Task</option>';
-        tasks.forEach(t => {
-          const opt = document.createElement("option");
-          opt.value = t.id;
-          opt.textContent = `${t.id}: ${t.question.substring(0, 40)}...`;
-          selector.appendChild(opt);
-        });
-      } catch (e) { console.error("Failed to load tasks", e); }
-    }
-
-    async function getAgentAction() {
-      const btn = event.target;
-      const originalText = btn.textContent;
-      btn.textContent = "AI Thinking...";
-      btn.disabled = true;
-      try {
-        const res = await fetch("/agent_action", { method: "POST" });
-        const action = await res.json();
-        if (res.ok) {
-          document.getElementById("action-input").value = JSON.stringify(action, null, 2);
-        } else {
-          alert("Agent Error: " + action.detail);
-        }
-      } catch (e) {
-        alert("Network error: " + e);
+        alert("Network error executing auto-step: " + e);
       } finally {
         btn.textContent = originalText;
-        btn.disabled = false;
+        if (!document.getElementById("step-btn").disabled) {
+           // renderState may have disabled it if episode done.
+        }
       }
     }
 

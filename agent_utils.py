@@ -75,7 +75,7 @@ def coerce_action(raw: dict, step: int, max_steps: int, obs: dict, history: List
         return {"action_type": "submit_answer", "answer": str(ans)}
     return raw
 
-def get_llm_action(client: OpenAI, question: str, obs: dict, step: int, history: List[dict]) -> dict:
+def get_llm_action(client: OpenAI, question: str, obs: dict, step: int, history: List[dict]) -> tuple[dict, str]:
     # Build a more descriptive history that includes short summaries of results
     hist_entries = []
     for h in history[-4:]:
@@ -104,7 +104,7 @@ def get_llm_action(client: OpenAI, question: str, obs: dict, step: int, history:
         text = completion.choices[0].message.content or ""
         start, end = text.find("{"), text.rfind("}") + 1
         if start != -1 and end > start:
-            return coerce_action(json.loads(text[start:end]), step, MAX_STEPS, obs, history)
+            return coerce_action(json.loads(text[start:end]), step, MAX_STEPS, obs, history), f"LLM ({MODEL_NAME})"
     except Exception:
         pass
-    return coerce_action(heuristic_action(step), step, MAX_STEPS, obs, history)
+    return coerce_action(heuristic_action(step), step, MAX_STEPS, obs, history), "Heuristic Fallback"
