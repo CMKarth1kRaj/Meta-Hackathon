@@ -292,12 +292,18 @@ def agent_action():
     from agent_utils import get_llm_action, get_client
     try:
         current_state = env.state()
-        # We need the last observation to get the question text
-        # Since env doesn't store the full last obs in a simple way, 
-        # we reconstruct a minimal one for the prompt.
+        
+        # Get the latest visible data from history if available, else initial state
+        last_vis = {}
+        if current_state.history:
+            last_vis = current_state.history[-1].get("observation", {}).get("visible_data", {})
+        else:
+            # Initial state observation has columns
+            last_vis = {"columns": env.df.columns.tolist(), "row_count": len(env.df)}
+
         obs_dict = {
             "question": next((t["question"] for t in TASKS if t["id"] == current_state.question_id), "N/A"),
-            "visible_data": current_state.history[-1]["observation"]["visible_data"] if current_state.history else {},
+            "visible_data": last_vis,
             "message": "Providing recommendation..."
         }
         

@@ -204,22 +204,25 @@ class CSVAnalystEnv:
             reward += self.TIMEOUT_PENALTY
             message = "⏰ Max steps reached. Episode terminated."
 
-        # Record in history
-        self.state_obj.history.append({
-            "step": self.state_obj.step_count,
-            "action": action.model_dump(),
-            "reward": round(reward, 4),
-            "done": done,
-            "message": message,
-        })
-
-        return CSVObservation(
+        obs = CSVObservation(
             question=self.current_task["question"],
             visible_data=_jsonable(visible_data),
             message=message,
             reward=round(reward, 4),
             done=done,
         )
+
+        # Record in history
+        self.state_obj.history.append({
+            "step": self.state_obj.step_count,
+            "action": action.model_dump(),
+            "observation": obs.model_dump(),
+            "reward": round(reward, 4),
+            "done": done,
+            "message": message,
+        })
+
+        return obs
 
     # ------------------------------------------------------------------
     # Internal helpers

@@ -148,7 +148,12 @@
       const newEntry = JSON.stringify(line, null, 2);
       historyBox.textContent = (isFirst ? "" : historyBox.textContent + "\n\n") + newEntry;
       historyBox.scrollTop = historyBox.scrollHeight;
+
+      // After a step, we reset the action input to something neutral or clear it
+      // to avoid accidental double-execution of the same action.
+      // But for now, let's leave it as is so user can iterate.
     }
+
 
     async function stepEnv() {
       const raw = document.getElementById("action-input").value;

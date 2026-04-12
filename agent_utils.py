@@ -76,9 +76,24 @@ def coerce_action(raw: dict, step: int, max_steps: int, obs: dict, history: List
     return raw
 
 def get_llm_action(client: OpenAI, question: str, obs: dict, step: int, history: List[dict]) -> dict:
-    history_json = json.dumps([h["action"] for h in history[-5:]], indent=2) if history else "[]"
+    # Build a more descriptive history that includes short summaries of results
+    hist_entries = []
+    for h in history[-4:]:
+        action_str = json.dumps(h["action"])
+        # Include a snippet of the observation to give the LLM memory
+        obs_snippet = json.dumps(h.get("observation", {}).get("visible_data", {}))[:200]
+        hist_entries.append(f"Step {h['step']}: {action_str} -> Result: {obs_snippet}...")
+    
+    history_text = "\n".join(hist_entries) if hist_entries else "None yet."
     visible_data = json.dumps(obs.get("visible_data", {}), indent=2)[:2000] 
-    user_prompt = f"Question: {question}\nStage: {step} of {MAX_STEPS}\n\nLast Observation:\n{visible_data}\n\nAction History (recent):\n{history_json}\nOutput ONLY the next JSON action:"
+    
+    user_prompt = (
+        f"Question: {question}\n"
+        f"Stage: {step} of {MAX_STEPS}\n\n"
+        f"Last Observation:\n{visible_data}\n\n"
+        f"Action History (recent steps):\n{history_text}\n\n"
+        "Output ONLY the next JSON action:"
+    )
     try:
         completion = client.chat.completions.create(
             model=MODEL_NAME,
