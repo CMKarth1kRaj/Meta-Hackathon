@@ -232,7 +232,7 @@ def root():
 
         <div class="btn-group">
           <a href="/docs" class="btn btn-primary">Open API Docs</a>
-          <a href="/tasks" class="btn btn-secondary">View Tasks</a>
+          <a href="/ui" class="btn btn-secondary">Human Interface</a>
           <a href="/health" class="btn btn-secondary">Health Check</a>
           <a href="https://github.com/CMKarth1kRaj/Meta-Hackathon" target="_blank" class="btn btn-secondary">GitHub Repo</a>
         </div>
@@ -246,6 +246,15 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/ui", include_in_schema=False)
+def get_ui():
+    """Serve the HumanAgent interface."""
+    import os
+    ui_path = os.path.join(os.path.dirname(__file__), "ui.html")
+    with open(ui_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 
 @app.get("/tasks")

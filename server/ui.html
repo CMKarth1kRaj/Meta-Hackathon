@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CSV Analyst – HumanAgent Interface</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background-color: #f3f4f6; color: #1f2937; }
+    h2 { color: #111827; }
+    .layout { display: grid; grid-template-columns: 2fr 3fr; gap: 16px; max-width: 1200px; margin: 0 auto; }
+    .card { background: white; border: 1px solid #e5e7eb; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+    h3 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+    label { display: block; font-weight: 500; margin-bottom: 4px; color: #4b5563; font-size: 0.9rem;}
+    textarea { width: 100%; height: 100px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-family: monospace; box-sizing: border-box; resize: vertical; }
+    pre { background: #f9fafb; padding: 12px; border: 1px solid #e5e7eb; border-radius: 4px; max-height: 250px; overflow: auto; font-size: 0.85rem; margin-top: 0; }
+    .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    button { padding: 8px 16px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
+    .btn-primary { background-color: #3b82f6; color: white; }
+    .btn-primary:hover { background-color: #2563eb; }
+    .btn-secondary { background-color: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background-color: #d1d5db; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 8px;}
+    .badge-gray { background-color: #e5e7eb; color: #374151; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2>CSV Analyst Interface</h2>
+    <a href="/" style="color: #3b82f6; text-decoration: none; font-weight: 500;">&larr; Back to Landing Page</a>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="card">
+        <h3>Take Action</h3>
+        <label>Action JSON:</label>
+        <textarea id="action-input">{
+  "action_type": "list_columns"
+}</textarea>
+        <div class="btn-group">
+          <button class="btn-primary" onclick="stepEnv()">Execute Step</button>
+        </div>
+        <div class="btn-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+          <button class="btn-secondary" onclick="resetEnv()">Reset Environment</button>
+          <button class="btn-secondary" onclick="getState()">Refresh State</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h3>Current State Summary</h3>
+        <div id="state-summary" style="font-size: 0.9rem; margin-bottom: 12px;"></div>
+        <pre id="state-box">No state yet. Click 'Reset Environment' to start.</pre>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>Current Observation</h3>
+        <pre id="obs-box">No observation yet.</pre>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Action History</h3>
+        <pre id="history-box">No actions taken yet.</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function renderState(data) {
+      if (data.state) {
+        document.getElementById("state-box").textContent = JSON.stringify(data.state, null, 2);
+        
+        // Update summary
+        const s = data.state;
+        const summaryHtml = `
+          <span class="badge badge-gray">Step: ${s.step_count || 0}/${s.max_steps || '?'}</span>
+          <br/><strong>Task:</strong> ${s.question_id || 'N/A'}
+        `;
+        document.getElementById("state-summary").innerHTML = summaryHtml;
+
+      } else {
+        document.getElementById("state-box").textContent = JSON.stringify(data, null, 2);
+      }
+      
+      if (data.observation) {
+        document.getElementById("obs-box").textContent = JSON.stringify(data.observation, null, 2);
+      } else if (data.question) {
+        // If it's a direct observation response
+        document.getElementById("obs-box").textContent = JSON.stringify(data, null, 2);
+      }
+    }
+
+    function renderStep(result, action) {
+      renderState(result);
+      const historyBox = document.getElementById("history-box");
+      const line = {
+        action,
+        reward: result.reward,
+        done: result.done,
+        message: result.message
+      };
+      
+      const isFirst = historyBox.textContent === "No actions taken yet.";
+      const newText = (isFirst ? "" : historyBox.textContent + "\n\n") + JSON.stringify(line, null, 2);
+      historyBox.textContent = newText;
+      historyBox.scrollTop = historyBox.scrollHeight;
+    }
+
+    async function resetEnv() {
+      // Clear history visually
+      document.getElementById("history-box").textContent = "No actions taken yet.";
+      
+      try {
+        const res = await fetch("/reset", { 
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}) 
+        });
+        const data = await res.json();
+        
+        // After reset, we should probably fetch the full state to update the state box properly
+        renderState({observation: data});
+        await getState(); // ensure state is updated
+      } catch (e) {
+        alert("Error resetting environment: " + e);
+      }
+    }
+
+    async function stepEnv() {
+      const raw = document.getElementById("action-input").value;
+      let action;
+      try { 
+        action = JSON.parse(raw); 
+      } catch (e) { 
+        alert("Invalid JSON format in action input:\n" + e.message); 
+        return; 
+      }
+
+      try {
+        const res = await fetch("/step", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(action)
+        });
+        
+        const data = await res.json();
+        if (!res.ok) {
+           alert("API Error: " + JSON.stringify(data));
+           return;
+        }
+        
+        renderStep(data, action);
+        
+        // Refresh full state to get updated history/steps
+        const stateRes = await fetch("/state");
+        const stateData = await stateRes.json();
+        document.getElementById("state-box").textContent = JSON.stringify(stateData, null, 2);
+        
+      } catch (e) {
+        alert("Network error executing step: " + e);
+      }
+    }
+
+    async function getState() {
+      try {
+        const res = await fetch("/state");
+        if (!res.ok) {
+            // Environment likely hasn't been reset yet
+            document.getElementById("state-box").textContent = "Environment not initialized. Call reset first.";
+            return;
+        }
+        const data = await res.json();
+        renderState({state: data});
+      } catch (e) {
+        document.getElementById("state-box").textContent = "Failed to fetch state: " + e;
+      }
+    }
+    
+    // Initial fetch to see if env is already running
+    getState();
+  </script>
+</body>
+</html>
